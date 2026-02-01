@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRoute - Sign In</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            /* Abstract Map Background with Overlay */
+            /* Using a reliable Unsplash Source instead of API-Key Protected Google Static Map */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(248, 249, 250, 0.2)),
+                url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1774&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            backdrop-filter: blur(6px);
+            /* Stronger blur for glass effect */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 48px 32px;
+            text-align: center;
+            animation: floatUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            /* Glassmorphism Card */
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 28px;
+        }
+
+        @keyframes floatUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .app-logo {
+            font-size: 36px;
+            color: var(--primary);
+            filter: drop-shadow(0 2px 4px rgba(26, 115, 232, 0.2));
+        }
+
+        .app-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-high);
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            font-size: 16px;
+            color: var(--text-medium);
+            margin-bottom: 40px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .phone-input-group {
+            display: flex;
+            align-items: center;
+            background: white;
+            /* Solid white for input readability */
+            border-radius: var(--radius-pill);
+            padding: 6px;
+            margin-bottom: 24px;
+            border: 1px solid transparent;
+            transition: var(--transition-fast);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .phone-input-group:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .country-code {
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-weight: 500;
+            color: var(--text-high);
+            border-right: 1px solid var(--text-disabled);
+            height: 32px;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .clean-input {
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            color: var(--text-high);
+            padding: 12px 16px;
+            flex: 1;
+            outline: none;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 400;
+        }
+
+        #otp-section {
+            display: none;
+            margin-top: 24px;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-msg {
+            margin-top: 24px;
+            font-size: 14px;
+            min-height: 24px;
+            font-weight: 500;
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="floating-card login-container">
+        <div class="logo-area">
+            <span class="material-icons-round app-logo">verified_user</span>
+            <span class="app-name">SafeRoute</span>
+        </div>
+        <div class="login-subtitle">Sign in to navigate safely.<br>Verified Routes & Real-time Alerts.</div>
+
+        <div id="recaptcha-container"></div>
+
+        <!-- Phone Input -->
+        <div class="phone-input-group">
+            <div class="country-code">
+                <!-- Swapped Flag Emoji for generic Globe Icon to prevent Windows display issues -->
+                <span class="material-icons-round" style="color:#5F6368;">public</span> +91
+            </div>
+            <input type="tel" id="phoneNumber" class="clean-input" placeholder="98765 43210" maxlength="10">
+        </div>
+
+        <button id="getOtpBtn" class="pill-button" style="width: 100%; justify-content: center;"
+            onclick="onSignInSubmit()">
+            Get Verification Code
+        </button>
+
+        <!-- OTP Section (Hidden initially) -->
+        <div id="otp-section">
+            <div class="phone-input-group">
+                <div class="country-code" style="border:none; padding-left: 20px;">
+                    <span class="material-icons-round" style="color:var(--text-medium);">lock</span>
+                </div>
+                <input type="number" id="otpCode" class="clean-input" placeholder="Enter 6-digit OTP"
+                    style="letter-spacing: 4px; font-weight: 500;">
+            </div>
+            <button id="verifyBtn" class="pill-button"
+                style="width: 100%; background-color: var(--safe); justify-content: center;"
+                onclick="onVerifyCodeSubmit()">
+                Verify & Access
+            </button>
+        </div>
+
+        <div id="status-msg" class="status-msg"></div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQI4kQl30trTxdqeBalU9u8xXWkdtbCfU",
+            authDomain: "safe-route-53cad.firebaseapp.com",
+            projectId: "safe-route-53cad",
+            storageBucket: "safe-route-53cad.firebasestorage.app",
+            messagingSenderId: "1048761593809",
+            appId: "1:1048761593809:web:8a02dc458cbb76c8defaf0",
+            measurementId: "G-MCVREVNSK3"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible'
+        });
+
+        function onSignInSubmit() {
+            const phoneInput = document.getElementById('phoneNumber').value;
+            // Basic validation
+            if (!phoneInput || phoneInput.length < 10) {
+                const status = document.getElementById('status-msg');
+                status.style.color = 'var(--danger)';
+                status.innerText = "Please enter a valid 10-digit number.";
+                return;
+            }
+
+            const fullPhone = "+91" + phoneInput;
+            const btn = document.getElementById('getOtpBtn');
+            const status = document.getElementById('status-msg');
+
+            btn.innerHTML = '<span class="material-icons-round spin">sync</span> Sending...';
+            btn.disabled = true;
+            status.innerText = "";
+
+            auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
+                .then((confirmationResult) => {
+                    window.confirmationResult = confirmationResult;
+
+                    document.getElementById('otp-section').style.display = 'block';
+                    btn.style.display = 'none'; // Hide Get OTP button
+
+                    status.style.color = 'var(--safe)';
+                    status.innerText = "Code sent to " + fullPhone;
+                }).catch((error) => {
+                    console.error(error);
+                    status.style.color = 'var(--danger)';
+                    status.innerText = error.message;
+                    btn.disabled = false;
+                    btn.innerHTML = "Get Verification Code";
+                });
+        }
+
+        function onVerifyCodeSubmit() {
+            const code = document.getElementById('otpCode').value;
+            const btn = document.getElementById('verifyBtn');
+            const status = document.getElementById('status-msg');
+
+            if (!code || code.length < 6) {
+                status.style.color = 'var(--danger)';
+                status.innerText = "Please enter the 6-digit code.";
+                return;
+            }
+
+            btn.innerHTML = '<span class="material-icons-round spin">sync</span> Verifying...';
+            btn.disabled = true;
+
+            window.confirmationResult.confirm(code).then(async (result) => {
+                const user = result.user;
+
+                localStorage.setItem('user_phone', user.phoneNumber);
+                localStorage.setItem('user_uid', user.uid);
+
+                status.style.color = 'var(--primary)';
+                status.innerText = "Success! Redirecting...";
+
+                db.collection("users").doc(user.phoneNumber).set({
+                    uid: user.uid,
+                    phone: user.phoneNumber,
+                    last_login: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true })
+                    .then(() => window.location.href = "index.html")
+                    .catch(() => window.location.href = "index.html");
+
+            }).catch((error) => {
+                console.error(error);
+                status.style.color = 'var(--danger)';
+                status.innerText = "Incorrect code. Please try again.";
+                btn.disabled = false;
+                btn.innerHTML = "Verify & Access";
+            });
+        }
+    </script>
+</body>
+
+</html>
