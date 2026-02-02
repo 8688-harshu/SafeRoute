@@ -115,7 +115,8 @@ def analyze_route_safety(coords, zones, time_of_day, crowd_density, mode):
     
     for zone in zones:
         zone_hit = False
-        for point in coords[::20]: # Optimize sampling
+        # Improved sampling frequency for better detection accuracy
+        for point in coords[::5]: 
             # Guard against malformed zone data
             if 'lat' not in zone or 'lng' not in zone: continue
             
@@ -131,12 +132,12 @@ def analyze_route_safety(coords, zones, time_of_day, crowd_density, mode):
             
             zone_risk = zone.get('risk_level', 'MEDIUM')
             if zone_risk == "HIGH":
-                risk_score += 40
+                risk_score += 50 # Was 40 - Increased to guarantee Red
                 if time_of_day == "night":
                     risk_score += 20
                     reasons.append("Night-time Danger Zone")
             else:
-                risk_score += 20
+                risk_score += 30 # Was 20 - Increased to guarantee Red (15+30=45)
                 
     if time_of_day == "night": risk_score += 10
     if crowd_density == "low": risk_score += 10
