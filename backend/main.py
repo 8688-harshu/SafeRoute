@@ -100,10 +100,8 @@ def trigger_sos(request: SOSRequest):
         return {"status": "success", "message": "SOS Alert Logged"}
     raise HTTPException(status_code=500, detail="Failed to log SOS")
 
-# --- Static Files (Frontend) ---
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-client_dir = os.path.join(base_dir, "web_client_archive")
-app.mount("/", StaticFiles(directory=client_dir, html=True), name="static")
+# Static files removed during cleanup
+# app.mount("/", StaticFiles(directory=client_dir, html=True), name="static")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
