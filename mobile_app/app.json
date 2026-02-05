@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "SafeRoute",
+    "slug": "saferoute",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.harsha90.saferoute",
+      "jsEngine": "jsc",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDWZuf9_o9SPiv7UHw26CgMUMM0fwS9Hko"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "minSdkVersion": 24,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
+            "gradleChildHeapSize": "1536M",
+            "extraGradleProps": {
+              "org.gradle.daemon": "false",
+              "org.gradle.jvmargs": "-Xmx1536m -XX:MaxMetaspaceSize=512m"
+            }
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bd931890-9155-4368-9d7e-1eafacaf30f8"
+      }
+    }
+  }
+}
