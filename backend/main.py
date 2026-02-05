@@ -13,7 +13,7 @@ from risk_engine import calculate_route_risk, RouteRequest, RouteResponse
 from firebase_service import firebase_svc
 from fastapi.middleware.cors import CORSMiddleware
 # Import the new search function
-from services.ors_service import search_places_ors
+from services.geocoding_service import search_places
 
 app = FastAPI(title="SafeRoute API", description="Safety-aware navigation backend", version="1.0.0")
 
@@ -41,9 +41,11 @@ def search_locations(query: str):
     """
     Search for locations by name.
     """
+    print(f"DEBUG: Search hit for query: {query}")
     if not query:
         return []
-    results = search_places_ors(query)
+    results = search_places(query)
+    print(f"DEBUG: Search returned {len(results)} results")
     return results
 
 @app.post("/safe-route", response_model=List[RouteResponse])
@@ -66,6 +68,13 @@ def get_risk_zones():
     """
     return firebase_svc.get_risk_zones()
 
+@app.get("/accidental-zones")
+def get_accidental_zones():
+    """
+    Get all accidental zones (Yellow) for map visualization.
+    """
+    return firebase_svc.get_accidental_zones()
+
 @app.post("/report-unsafe")
 def report_unsafe_area(report: SafetyReport):
     """
@@ -80,6 +89,7 @@ class SOSRequest(BaseModel):
     phone: str
     lat: float
     lng: float
+    type: Optional[str] = "MANUAL"
 
 @app.post("/api/sos")
 def trigger_sos(request: SOSRequest):
@@ -99,6 +109,14 @@ def trigger_sos(request: SOSRequest):
     if success:
         return {"status": "success", "message": "SOS Alert Logged"}
     raise HTTPException(status_code=500, detail="Failed to log SOS")
+
+@app.get("/api/check-blacklist")
+def check_blacklist(phone: str):
+    """
+    Check if a phone number is in the criminal_blacklist.
+    """
+    is_blocked = firebase_svc.check_criminal_record(phone)
+    return {"blocked": is_blocked}
 
 # Static files removed during cleanup
 # app.mount("/", StaticFiles(directory=client_dir, html=True), name="static")

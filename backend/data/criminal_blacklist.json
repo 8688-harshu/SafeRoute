@@ -1,0 +1,14 @@
+[
+    {
+        "phoneNumber": "+918688027739",
+        "reason": "Test Block for Demo",
+        "status": "BLOCKED",
+        "addedBy": "ADMIN"
+    },
+    {
+        "phoneNumber": "+919999999999",
+        "reason": "Suspicious Activity",
+        "status": "BLOCKED",
+        "addedBy": "SYSTEM"
+    }
+]

@@ -1,0 +1,29 @@
+[
+    {
+        "name": "Amberpet X Roads",
+        "lat": 17.3900,
+        "lng": 78.5000,
+        "radius_meters": 300,
+        "risk_level": "MEDIUM",
+        "type": "accidental",
+        "reason": "High frequency of minor accidents"
+    },
+    {
+        "name": "LB Nagar Ring Road",
+        "lat": 17.3500,
+        "lng": 78.5500,
+        "radius_meters": 500,
+        "risk_level": "MEDIUM",
+        "type": "accidental",
+        "reason": "Traffic congestion and pedestrian crossings"
+    },
+    {
+        "name": "Paradise Circle",
+        "lat": 17.4411,
+        "lng": 78.4875,
+        "radius_meters": 200,
+        "risk_level": "MEDIUM",
+        "type": "accidental",
+        "reason": "Heavy traffic merge point"
+    }
+]

@@ -49,7 +49,7 @@ def format_travel_time(seconds):
     m = int((seconds % 3600) // 60)
     return f"{h} hr {m} min" if h > 0 else f"{m} min"
 
-from services.ipstack_service import geocode_city
+# from services.ipstack_service import geocode_city
 
 def get_coordinates(place_name: str):
     try:
@@ -65,11 +65,41 @@ def get_coordinates(place_name: str):
         pass
     
     print(f"DEBUG: Geocoding '{place_name}'...")
-    result = geocode_city(place_name)
+    from services.geocoding_service import geocode_location
+    result = geocode_location(place_name)
     if result:
         print(f"DEBUG: Geocode success: {result}")
         return result['lat'], result['lng']
     print(f"DEBUG: Geocode failed for '{place_name}'")
+    return None
+
+def fetch_google_route(start, end, mode="driving"):
+    """Fetch premium route from Google Directions API"""
+    key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not key or "AIza" not in key:
+        return None
+        
+    g_mode = "driving"
+    if mode == "walking": g_mode = "walking"
+    elif mode == "cycling": g_mode = "bicycling"
+    
+    url = f"https://maps.googleapis.com/maps/api/directions/json"
+    params = {
+        "origin": f"{start[0]},{start[1]}",
+        "destination": f"{end[0]},{end[1]}",
+        "mode": g_mode,
+        "key": key,
+        "alternatives": "true"
+    }
+    
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data['status'] == "OK":
+                return data
+    except Exception as e:
+        print(f"Google Route Error: {e}")
     return None
 
 def fetch_osrm_route(start_coords, end_coords, mode="driving", options=None):
@@ -115,22 +145,39 @@ def analyze_route_safety(coords, zones, time_of_day, crowd_density, mode):
     
     for zone in zones:
         zone_hit = False
+        min_dist_found = 9999
+        
         # Improved sampling frequency for better detection accuracy
-        for point in coords[::5]: 
+        # Check EVERY point for debugging accuracy
+        for point in coords: 
             # Guard against malformed zone data
             if 'lat' not in zone or 'lng' not in zone: continue
             
             dist = haversine(point[0], point[1], zone['lat'], zone['lng'])
-            if dist < (zone.get('radius_km', 1.0) or 1.0):
+            if dist < min_dist_found: min_dist_found = dist
+            
+            # Normalize Radius to KM for comparison (Haversine returns KM)
+            radius_km = 1.0 # Default
+            if 'radius_meters' in zone:
+                radius_km = zone['radius_meters'] / 1000.0
+            elif 'radius_km' in zone:
+                radius_km = zone['radius_km']
+            
+            if dist < radius_km:
                 zone_hit = True
+                print(f"!!! ALERT: Zone HIT '{zone.get('name')}' Dist: {dist:.3f}km < Radius: {radius_km:.3f}km")
                 break # Count zone only once per route
         
+        # print(f"DEBUG: Checked '{zone.get('name')}'. Min Dist: {min_dist_found:.3f}km")
+
         if zone_hit:
             reason = f"Near {zone['name']}"
             if zone.get('reason'): reason += f" ({zone['reason']})"
             if reason not in reasons: reasons.append(reason)
             
             zone_risk = zone.get('risk_level', 'MEDIUM')
+            print(f"!!! RISK ADDED: {zone_risk} for {zone.get('name')}")
+            
             if zone_risk == "HIGH":
                 risk_score += 50 # Was 40 - Increased to guarantee Red
                 if time_of_day == "night":
@@ -141,8 +188,10 @@ def analyze_route_safety(coords, zones, time_of_day, crowd_density, mode):
                 
     if time_of_day == "night": risk_score += 10
     if crowd_density == "low": risk_score += 10
-        
-    return min(99, max(5, risk_score)), list(set(reasons))
+    
+    final_score = min(99, max(5, risk_score))
+    print(f"DEBUG: Final Route Score: {final_score}")
+    return final_score, list(set(reasons))
 
 def extract_steps(route_data):
     steps = []
@@ -277,9 +326,25 @@ def get_dual_routes(start_coords, end_coords, mode, zones, context):
     
     candidates = []
     
-    # 1. DIRECT ROUTE (Fastest)
-    print("DEBUG: fetching Direct Route...")
-    direct_raw = fetch_osrm_route(start_coords, end_coords, mode)
+    # 1. DIRECT ROUTE (Best quality available)
+    print("DEBUG: fetching Direct Route (Prioritizing Google/ORS)...")
+    direct_raw = None
+    
+    # Try Google First
+    google_data = fetch_google_route(start_coords, end_coords, mode)
+    if google_data:
+        # Google returns a different format, we need to adapt it briefly
+        # or just try ORS which is already adapted.
+        # For simplicity in this engine, we use ORS as the primary adapted premium source.
+        pass
+
+    # Try ORS (Standardized)
+    direct_raw = get_ors_route(start_coords, end_coords, mode)
+    
+    # Fallback to OSRM
+    if not direct_raw:
+        direct_raw = fetch_osrm_route(start_coords, end_coords, mode)
+        
     if direct_raw and 'routes' in direct_raw:
         r = direct_raw['routes'][0]
         candidates.append({"type": "direct", "route": r})
@@ -412,6 +477,11 @@ def calculate_route_risk(request: RouteRequest) -> List[RouteResponse]:
     if not start_coords or not end_coords: return []
     
     risk_zones = firebase_svc.get_risk_zones()
+    accidental_zones = firebase_svc.get_accidental_zones()
+    
+    # Combine lists (accidental zones will have risk_level=MEDIUM which adds +30 score)
+    all_zones = risk_zones + accidental_zones
+    
     context = {"time": request.time_of_day, "crowd": request.crowd_density}
     
-    return get_dual_routes(start_coords, end_coords, request.travel_mode, risk_zones, context)
+    return get_dual_routes(start_coords, end_coords, request.travel_mode, all_zones, context)
