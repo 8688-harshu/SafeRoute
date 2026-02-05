@@ -1,38 +1,21 @@
-import os
-from PIL import Image
+from PIL import Image, ImageDraw
 
-def fix_images():
-    assets_dir = r"c:\Users\SRI RAM\.gemini\antigravity\scratch\SafeRoute\mobile_app\assets"
+def create_bg():
+    # Create a 1080x1920 image (common mobile resolution)
+    width, height = 1080, 1920
+    # Create a white background
+    img = Image.new('RGB', (width, height), color='#FFFFFF')
+    draw = ImageDraw.Draw(img)
     
-    # List of files to check/fix based on standard expo assets
-    targets = ["icon.png", "adaptive-icon.png", "splash-icon.png", "favicon.png"]
-    
-    for filename in targets:
-        path = os.path.join(assets_dir, filename)
-        if not os.path.exists(path):
-            print(f"Skipping {filename}: Not found")
-            continue
-            
-        try:
-            with Image.open(path) as img:
-                print(f"Checking {filename} - Format: {img.format}")
-                
-                # If it's not a PNG, or if we just want to ensure it is standard PNG
-                if img.format != 'PNG':
-                    print(f"Converting {filename} from {img.format} to PNG...")
-                    # Convert to RGBA to handle transparency if present/needed
-                    img = img.convert("RGBA")
-                    img.save(path, "PNG")
-                    print(f"Saved {filename} as valid PNG.")
-                else:
-                    # Even if it says PNG, sometimes the extension lies. 
-                    # PIL open() reads the header. If we are here, PIL thinks it is a PNG.
-                    # But the doctor said it was JPG. Let's force re-save to be sure.
-                    print(f"Re-saving {filename} to ensure integrity...")
-                    img.save(path, "PNG")
-                    
-        except Exception as e:
-            print(f"Error processing {filename}: {e}")
+    # Add some subtle patterns (safe route theme)
+    # Light blue/grey abstract circles or paths
+    for i in range(0, height, 100):
+        draw.line([(0, i), (width, i + 200)], fill='#F1F3F4', width=2)
+        draw.line([(0, i + 50), (width, i + 250)], fill='#F8F9FA', width=2)
+        
+    output_path = r"c:\Users\SRI RAM\.gemini\antigravity\scratch\SafeRoute\mobile_app\assets\bg.png"
+    img.save(output_path, "PNG")
+    print(f"Created new valid background at {output_path}")
 
 if __name__ == "__main__":
-    fix_images()
+    create_bg()

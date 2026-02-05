@@ -21,7 +21,13 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.harsha90.saferoute",
-      "jsEngine": "jsc",
+      "jsEngine": "hermes",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "FOREGROUND_SERVICE",
+        "INTERNET"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDWZuf9_o9SPiv7UHw26CgMUMM0fwS9Hko"
@@ -40,12 +46,7 @@
             "minSdkVersion": 24,
             "compileSdkVersion": 34,
             "targetSdkVersion": 34,
-            "buildToolsVersion": "34.0.0",
-            "gradleChildHeapSize": "1536M",
-            "extraGradleProps": {
-              "org.gradle.daemon": "false",
-              "org.gradle.jvmargs": "-Xmx1536m -XX:MaxMetaspaceSize=512m"
-            }
+            "buildToolsVersion": "34.0.0"
           }
         }
       ]

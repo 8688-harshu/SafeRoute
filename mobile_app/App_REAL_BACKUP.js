@@ -9,7 +9,6 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 import LoginScreen from './LoginScreen';
 import HomeScreen from './HomeScreen';
-import { API_URL } from './config';
 
 // Add basic configuration
 axios.defaults.timeout = 60000;
@@ -19,8 +18,6 @@ axios.interceptors.request.use(config => {
   config.headers['Bypass-Tunnel-Reminder'] = 'true';
   console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`);
   return config;
-}, error => {
-  return Promise.reject(error);
 });
 
 axios.interceptors.response.use(
