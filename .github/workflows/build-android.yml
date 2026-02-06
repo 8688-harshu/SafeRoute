@@ -26,9 +26,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Dependencies
+      - name: Install Dependencies & EAS CLI
         working-directory: mobile_app
-        run: npm ci
+        run: |
+          npm ci
+          npm install -g eas-cli
 
       - name: Setup EAS
         uses: expo/expo-github-action@v8
@@ -46,6 +48,12 @@ jobs:
 
       - name: Build APK Locally
         working-directory: mobile_app
-        run: npx eas build --platform android --profile preview --local --non-interactive
+        run: eas build --platform android --profile preview --local --non-interactive --output=./app-release.apk
         env:
           GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"'
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release
+          path: mobile_app/app-release.apk
