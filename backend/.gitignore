@@ -1,0 +1,11 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Private Keys and Secrets (CRITICAL)
+serviceAccountKey.json
+.env
+.DS_Store

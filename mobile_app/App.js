@@ -39,14 +39,30 @@ export default function App() {
   }, []);
 
   const checkLoginStatus = async () => {
+    console.log("[App] Checking login status...");
     try {
-      const phone = await SecureStore.getItemAsync('user_phone');
-      if (phone) {
-        setUserPhone(phone);
+      // Create a timeout promise
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(() => resolve('TIMEOUT'), 5000)
+      );
+
+      const storePromise = SecureStore.getItemAsync('user_phone');
+
+      // Race the store against timeout
+      const result = await Promise.race([storePromise, timeoutPromise]);
+
+      if (result === 'TIMEOUT') {
+        console.warn("[App] SecureStore timed out. Proceeding as logged out.");
+      } else if (result) {
+        console.log("[App] User found:", result);
+        setUserPhone(result);
+      } else {
+        console.log("[App] No user logged in.");
       }
     } catch (e) {
       console.warn('Error loading token', e);
     } finally {
+      console.log("[App] Initialization complete.");
       setIsLoading(false);
     }
   };

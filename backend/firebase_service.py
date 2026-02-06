@@ -9,6 +9,7 @@ from typing import List, Dict
 # Path to service account key (user needs to place this file)
 CRED_PATH = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
 LOCAL_DB_PATH = os.path.join(os.path.dirname(__file__), "data", "risk_zones.json")
+LOCAL_ACC_PATH = os.path.join(os.path.dirname(__file__), "data", "accidental_zones.json")
 
 class FirebaseService:
     def __init__(self):
@@ -52,6 +53,7 @@ class FirebaseService:
                 docs = self.db.collection('risk_zones').stream()
                 for doc in docs:
                     data = doc.to_dict()
+                    data = self._sanitize_data(data)
                     
                     if 'lat' not in data or 'lng' not in data:
                         # Try to find name
@@ -81,6 +83,9 @@ class FirebaseService:
                     zones.append(data)
                 
                 print(f"DEBUG: Loaded {len(zones)} risk zones from Firebase")
+                if len(zones) == 0:
+                    print("⚠️ Firestore empty, using LOCAL DATA fallback.")
+                    return self._load_local_zones()
                 return zones
             except Exception as e:
                 print(f"Firestore Read Error: {e}")
@@ -98,6 +103,7 @@ class FirebaseService:
                 docs = self.db.collection('accidental_zones').stream()
                 for doc in docs:
                     data = doc.to_dict()
+                    data = self._sanitize_data(data)
                     
                     # Standardize Radius (Priority: radius_meters > radius > radius_km)
                     r = data.get('radius_meters') or data.get('radius')
@@ -117,13 +123,19 @@ class FirebaseService:
                     data['type'] = 'accidental'
                     if 'name' not in data: data['name'] = "Accident Prone Area"
                     
+                    if 'name' not in data: data['name'] = "Accident Prone Area"
+                    
                     zones.append(data)
+                
                 print(f"DEBUG: Loaded {len(zones)} accidental zones from Firebase")
+                if len(zones) == 0:
+                    print("⚠️ Firestore empty, using LOCAL ACCIDENTAL DATA fallback.")
+                    return self._load_local_zones(LOCAL_ACC_PATH)
                 return zones
             except Exception as e:
                 print(f"Firestore Accidental Read Error: {e}")
-                return []
-        return []
+                return self._load_local_zones(LOCAL_ACC_PATH)
+        return self._load_local_zones(LOCAL_ACC_PATH)
 
     def add_safety_report(self, report_data: Dict):
         """Save report to Firestore and potentially update a risk zone"""
@@ -159,20 +171,39 @@ class FirebaseService:
         """Query criminal_blacklist for a specific phone number"""
         if not self.use_local and self.db:
             try:
-                # Query Firestore for matching phoneNumber
+                # Query exact match first
                 docs = self.db.collection('criminal_blacklist').where('phoneNumber', '==', phone).limit(1).get()
                 if len(docs) > 0:
                     print(f"⚠️ SECURITY ALERT: Criminal record found for {phone}")
                     return True
+                
+                # Try without '+' if it exists
+                if phone.startswith('+'):
+                    no_plus = phone[1:]
+                    docs2 = self.db.collection('criminal_blacklist').where('phoneNumber', '==', no_plus).limit(1).get()
+                    if len(docs2) > 0:
+                         print(f"⚠️ SECURITY ALERT: Criminal record found for {no_plus}")
+                         return True
+
                 return False
             except Exception as e:
                 print(f"Firestore Blacklist Error: {e}")
                 return False
         return False # Fallback to safe if DB unavailable or local
 
-    def _load_local_zones(self):
-        if os.path.exists(LOCAL_DB_PATH):
-            with open(LOCAL_DB_PATH, 'r') as f:
+    def _sanitize_data(self, data):
+        """Convert Firestore types to JSON serializable types"""
+        new_data = {}
+        for k, v in data.items():
+            if hasattr(v, 'isoformat'):
+                new_data[k] = v.isoformat()
+            else:
+                new_data[k] = v
+        return new_data
+
+    def _load_local_zones(self, path=LOCAL_DB_PATH):
+        if os.path.exists(path):
+            with open(path, 'r') as f:
                 return json.load(f)
         return []
 

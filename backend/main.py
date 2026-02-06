@@ -32,6 +32,10 @@ class SafetyReport(BaseModel):
     description: Optional[str] = None
     timestamp: str
 
+@app.get("/")
+def read_root():
+    return {"message": "SafeRoute Backend is Active", "docs_url": "/docs"}
+
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "message": "SafeRoute Backend is Running"}
@@ -96,6 +100,7 @@ def trigger_sos(request: SOSRequest):
     """
     Log emergency SOS with location to Firestore.
     """
+    print(f"🔥 SOS RECEIVED from {request.phone} at {request.lat}, {request.lng}")
     from datetime import datetime
     
     data = {

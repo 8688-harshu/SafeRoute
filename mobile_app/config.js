@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 // ⬇️ UNCOMMENT THIS FOR PRODUCTION (RENDER)
 // const BASE_URL = 'https://saferoute-api.onrender.com';
 // ⬇️ USE THIS FOR LOCAL DEVELOPMENT
-const BASE_URL = 'http://192.168.0.136:8000'; // Local WiFi IP
+const BASE_URL = 'http://192.168.68.105:8000'; // Local WiFi IP
 
 console.log(`[SafeRoute] Connecting to Backend: ${BASE_URL}`);
 

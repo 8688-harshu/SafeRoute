@@ -120,16 +120,20 @@ export default function HomeScreen({ onLogout }) {
 
     const loadZones = async () => {
         try {
+            console.log('[HomeScreen] Fetching Zones...');
             const riskReq = axios.get(`${API_URL}${ENDPOINTS.RISK_ZONES}`);
             const accReq = axios.get(`${API_URL}/accidental-zones`);
 
             const [riskRes, accRes] = await Promise.all([riskReq, accReq]);
 
+            console.log(`[HomeScreen] Risk Zones Loaded: ${riskRes.data?.length}`);
+            console.log(`[HomeScreen] Accidental Zones Loaded: ${accRes.data?.length}`);
+
             if (riskRes.data) setRiskZones(riskRes.data);
             if (accRes.data) setAccidentalZones(accRes.data);
 
         } catch (err) {
-            console.error(`[Zones] Error loading zones:`, err.message);
+            console.error(`[Zones] Error loading zones: ${API_URL}`, err.message);
         }
     };
 
@@ -640,14 +644,15 @@ export default function HomeScreen({ onLogout }) {
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        <View style={styles.sheetContent}>
+                        <View style={[styles.sheetContent, { flex: 1 }]}>
                             <Text style={[styles.sheetTitle, { color: theme.text, fontSize: 18, marginBottom: 10 }]}>Route Options</Text>
 
-                            <View style={{ maxHeight: 400 }}>
+                            <View style={{ flex: 1 }}>
                                 <FlatList
                                     data={allRoutes}
                                     keyExtractor={(item, index) => index.toString()}
                                     contentContainerStyle={{ paddingBottom: 10 }}
+                                    showsVerticalScrollIndicator={true}
                                     renderItem={({ item, index }) => (
                                         <TouchableOpacity
                                             onPress={() => setSelectedRouteIndex(index)}
@@ -667,7 +672,7 @@ export default function HomeScreen({ onLogout }) {
 
                             {/* Selected Route Actions */}
                             <TouchableOpacity
-                                style={[styles.mainButton, { marginTop: 10 }]}
+                                style={[styles.mainButton, { marginTop: 10, marginBottom: 10 }]}
                                 onPress={startDriveMode}
                             >
                                 <Ionicons name="navigate" size={20} color="white" style={{ marginRight: 10 }} />
@@ -676,7 +681,7 @@ export default function HomeScreen({ onLogout }) {
                                 </Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={{ marginTop: 15 }} onPress={() => { setDestination(null); setAllRoutes([]) }}>
+                            <TouchableOpacity style={{ marginBottom: 5 }} onPress={() => { setDestination(null); setAllRoutes([]) }}>
                                 <Text style={{ color: theme.subtext, textAlign: 'center' }}>Cancel</Text>
                             </TouchableOpacity>
                         </View>
@@ -744,7 +749,22 @@ const styles = StyleSheet.create({
     sosText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
 
     // Bottom Sheet
-    bottomSheet: { position: 'absolute', bottom: 0, width: '100%', backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, elevation: 20, paddingBottom: 30 },
+    // Bottom Sheet (Task 2: Route Options Covering Map Fix)
+    bottomSheet: {
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        height: '45%', // Restrict height to 45% of screen
+        backgroundColor: 'white',
+        borderTopLeftRadius: 25,
+        borderTopRightRadius: 25,
+        elevation: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        // paddingBottom removed to allow ScrollView to handle inner spacing
+    },
     sheetContent: { padding: 24 },
     sheetTitle: { fontSize: 22, fontWeight: 'bold', color: TEXT_DARK, marginBottom: 20 },
     routeHeader: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 10 },

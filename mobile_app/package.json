@@ -12,6 +12,7 @@
     "axios": "^1.13.4",
     "expo": "~54.0.33",
     "expo-build-properties": "~1.0.10",
+    "expo-linear-gradient": "~15.0.8",
     "expo-location": "~19.0.8",
     "expo-secure-store": "~15.0.8",
     "expo-sensors": "~15.0.8",
