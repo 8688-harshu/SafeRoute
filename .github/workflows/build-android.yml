@@ -1,13 +1,10 @@
-name: Build Android
+name: Build Android (Local)
 
 on:
   push:
     branches:
       - main
       - master
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -16,14 +13,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node
+      - name: Setup Node 20
         uses: actions/setup-node@v3
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: mobile_app/package-lock.json
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
@@ -39,6 +36,16 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build Android APK
+      - name: Prebuild (Generate Native Code)
         working-directory: mobile_app
-        run: eas build --platform android --profile preview --non-interactive
+        run: npx expo prebuild --platform android --clean
+
+      - name: Fix Gradle Permissions
+        working-directory: mobile_app/android
+        run: chmod +x gradlew
+
+      - name: Build APK Locally
+        working-directory: mobile_app
+        run: npx eas build --platform android --profile preview --local --non-interactive
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"'

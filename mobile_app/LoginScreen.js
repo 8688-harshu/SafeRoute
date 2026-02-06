@@ -7,13 +7,12 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
-    LayoutAnimation,
-    UIManager,
     ActivityIndicator,
     TouchableWithoutFeedback,
     Keyboard,
     Alert,
-    ScrollView // <--- Task 1: Import ScrollView
+    ScrollView,
+    Dimensions
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,10 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_URL } from './config';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ onLoginSuccess }) {
     const [phone, setPhone] = useState('');
@@ -44,7 +40,8 @@ export default function LoginScreen({ onLoginSuccess }) {
             return response.data.blocked;
         } catch (error) {
             console.error('[Security Check Failed]', error);
-            return false; // Fail safe
+            // Default to safe if offline, logic can be stricter for high-sec apps
+            return false;
         }
     };
 
@@ -70,7 +67,6 @@ export default function LoginScreen({ onLoginSuccess }) {
         }
 
         // Step 3: Proceed if Clean
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setShowOtp(true);
     };
 
@@ -91,91 +87,93 @@ export default function LoginScreen({ onLoginSuccess }) {
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <LinearGradient
-                colors={['#0F2027', '#203A43', '#2C5364']}
+                colors={['#0f0c29', '#302b63', '#24243e']} // Cyberpunk Midnight Gradient
                 style={styles.background}
             >
-                {/* Task 1: KeyboardAvoidingView with behavior */}
+                {/* Decorative Circles */}
+                <View style={[styles.circle, styles.circle1]} />
+                <View style={[styles.circle, styles.circle2]} />
+
                 <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     style={styles.container}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
                 >
-                    {/* Task 1: ScrollView with specific contentContainerStyle */}
                     <ScrollView
-                        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+                        contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                     >
-                        <View style={styles.innerContainer}>
-                            {/* Header Slogan */}
-                            <View style={styles.header}>
-                                <Ionicons name="shield-checkmark" size={60} color="#FFC837" />
-                                <Text style={styles.appName}>SafeRoute</Text>
-                                <Text style={styles.tagline}>Navigate with Confidence</Text>
+                        {/* Header Content */}
+                        <View style={styles.header}>
+                            <Ionicons name="finger-print-outline" size={64} color="#00f2ff" style={{ opacity: 0.9 }} />
+                            <Text style={styles.appName}>SafeRoute</Text>
+                            <Text style={styles.tagline}>SECURE ACCESS PORTAL</Text>
+                        </View>
+
+                        {/* Glass Card (Static View instead of Animated.View) */}
+                        <View style={styles.glassCard}>
+                            <Text style={styles.welcomeText}>Identity Verification</Text>
+                            <Text style={styles.instructionText}>Authenticate to continue</Text>
+
+                            {/* Phone Input */}
+                            <View style={styles.inputContainer}>
+                                <Ionicons name="smartphone-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
+                                <Text style={styles.prefix}>+91</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Mobile Number"
+                                    placeholderTextColor="rgba(255,255,255,0.4)"
+                                    keyboardType="phone-pad"
+                                    maxLength={10}
+                                    value={phone}
+                                    onChangeText={setPhone}
+                                    editable={!showOtp}
+                                />
                             </View>
 
-                            {/* Glassmorphism Card */}
-                            <View style={styles.glassCard}>
-                                <Text style={styles.welcomeText}>Welcome Back</Text>
-                                <Text style={styles.instructionText}>Enter your details to continue</Text>
-
-                                {/* Phone Input */}
-                                <View style={styles.inputWrapper}>
-                                    <Ionicons name="call-outline" size={20} color="rgba(255,255,255,0.7)" style={{ marginRight: 10 }} />
-                                    <Text style={styles.prefix}>+91</Text>
+                            {/* OTP Input (Conditional) */}
+                            {showOtp && (
+                                <View style={[styles.inputContainer, { marginTop: 25 }]}>
+                                    <Ionicons name="lock-closed-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Phone Number"
+                                        placeholder="Enter OTP Code"
                                         placeholderTextColor="rgba(255,255,255,0.4)"
-                                        keyboardType="phone-pad"
-                                        maxLength={10}
-                                        value={phone}
-                                        onChangeText={setPhone}
+                                        keyboardType="number-pad"
+                                        maxLength={6}
+                                        value={otp}
+                                        onChangeText={setOtp}
                                     />
                                 </View>
+                            )}
 
-                                {/* OTP Input (Animated) */}
-                                {showOtp && (
-                                    <View style={[styles.inputWrapper, { marginTop: 20 }]}>
-                                        <Ionicons name="key-outline" size={20} color="rgba(255,255,255,0.7)" style={{ marginRight: 10 }} />
-                                        <TextInput
-                                            style={styles.input}
-                                            placeholder="Enter OTP"
-                                            placeholderTextColor="rgba(255,255,255,0.4)"
-                                            keyboardType="number-pad"
-                                            maxLength={6}
-                                            value={otp}
-                                            onChangeText={setOtp}
-                                        />
-                                    </View>
-                                )}
-
-                                {/* Action Button */}
-                                <TouchableOpacity
-                                    onPress={showOtp ? handleVerify : handleGetOtp}
-                                    activeOpacity={0.8}
-                                    style={styles.touchableButton}
+                            {/* Hero Button */}
+                            <TouchableOpacity
+                                onPress={showOtp ? handleVerify : handleGetOtp}
+                                activeOpacity={0.8}
+                                style={styles.buttonWrapper}
+                            >
+                                <LinearGradient
+                                    colors={['#ff416c', '#ff4b2b']} // Sunset Orange Gradient
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.heroButton}
                                 >
-                                    <LinearGradient
-                                        colors={['#FF8008', '#FFC837']}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={styles.gradientButton}
-                                    >
-                                        {loading ? (
-                                            <ActivityIndicator color="#0F2027" />
-                                        ) : (
-                                            <Text style={styles.buttonText}>
-                                                {showOtp ? "VERIFY & LOGIN" : "GET OTP"}
-                                            </Text>
-                                        )}
-                                    </LinearGradient>
-                                </TouchableOpacity>
+                                    {loading ? (
+                                        <ActivityIndicator color="white" />
+                                    ) : (
+                                        <Text style={styles.buttonText}>
+                                            {showOtp ? "SECURE LOGIN" : "REQUEST OTP"}
+                                        </Text>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
 
-                            </View>
                         </View>
-                    </ScrollView>
 
+                        <Text style={styles.footerText}>Protected by SafeRoute Security Systems v2.1</Text>
+
+                    </ScrollView>
                 </KeyboardAvoidingView>
                 <StatusBar style="light" />
             </LinearGradient>
@@ -187,103 +185,134 @@ const styles = StyleSheet.create({
     background: {
         flex: 1,
         width: '100%',
-        justifyContent: 'center',
     },
     container: {
         flex: 1,
     },
-    innerContainer: {
-        flex: 1,
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        width: '100%'
+        paddingVertical: 40
+    },
+    // Decorative Circles
+    circle: {
+        position: 'absolute',
+        borderRadius: 200,
+        backgroundColor: '#00f2ff',
+        opacity: 0.08,
+    },
+    circle1: {
+        width: 300,
+        height: 300,
+        top: -50,
+        left: -80,
+    },
+    circle2: {
+        width: 200,
+        height: 200,
+        bottom: 100,
+        right: -40,
+        backgroundColor: '#ff416c',
     },
     header: {
         alignItems: 'center',
-        marginBottom: 40
+        marginBottom: 40,
     },
     appName: {
-        fontSize: 36,
+        fontSize: 42,
         fontWeight: 'bold',
         color: 'white',
+        letterSpacing: 2,
         marginTop: 10,
-        textShadowColor: 'rgba(0,0,0,0.3)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4
+        textShadowColor: '#00f2ff',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 10,
     },
     tagline: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.7)',
+        fontSize: 12,
+        color: '#00f2ff',
+        letterSpacing: 4,
         marginTop: 5,
-        letterSpacing: 1
+        fontWeight: '600'
     },
     glassCard: {
-        width: '100%',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 20,
+        width: width * 0.85,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)', // Frosted Glass
+        borderRadius: 25,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: 'rgba(255,255,255,0.15)',
         padding: 30,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
         shadowRadius: 20,
-        elevation: 10
+        elevation: 10,
     },
     welcomeText: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: 'bold',
         color: 'white',
-        alignSelf: 'flex-start'
+        alignSelf: 'flex-start',
+        marginBottom: 5
     },
     instructionText: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.6)',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.5)',
         alignSelf: 'flex-start',
         marginBottom: 30
     },
-    inputWrapper: {
+    inputContainer: {
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.3)',
-        paddingVertical: 10
+        borderBottomColor: 'rgba(255,255,255,0.2)',
+        paddingVertical: 12,
+    },
+    inputIcon: {
+        marginRight: 15,
     },
     prefix: {
-        fontSize: 16,
-        fontWeight: 'bold',
         color: 'white',
-        marginRight: 10
+        fontSize: 16,
+        fontWeight: '600',
+        marginRight: 10,
     },
     input: {
         flex: 1,
+        color: 'white',
         fontSize: 16,
-        color: 'white'
+        letterSpacing: 1,
     },
-    touchableButton: {
+    buttonWrapper: {
         width: '100%',
         marginTop: 40,
-        borderRadius: 30,
-        shadowColor: '#FF8008',
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.5,
+        borderRadius: 50,
+        shadowColor: '#ff4b2b',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
         shadowRadius: 10,
-        elevation: 10
+        elevation: 8,
     },
-    gradientButton: {
+    heroButton: {
         width: '100%',
         height: 55,
-        borderRadius: 30,
+        borderRadius: 50,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     buttonText: {
-        color: '#0F2027',
-        fontSize: 16,
+        color: 'white',
+        fontSize: 14,
         fontWeight: 'bold',
-        letterSpacing: 1
+        letterSpacing: 2,
+    },
+    footerText: {
+        marginTop: 40,
+        color: 'rgba(255,255,255,0.3)',
+        fontSize: 10,
+        letterSpacing: 1,
     }
 });
