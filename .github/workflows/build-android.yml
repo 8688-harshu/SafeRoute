@@ -1,4 +1,4 @@
-name: Build Android (Local)
+name: Build Android (Native Gradle)
 
 on:
   push:
@@ -26,17 +26,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Dependencies & EAS CLI
+      - name: Install Dependencies
         working-directory: mobile_app
-        run: |
-          npm ci
-          npm install -g eas-cli
-
-      - name: Setup EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+        run: npm ci --legacy-peer-deps
 
       - name: Prebuild (Generate Native Code)
         working-directory: mobile_app
@@ -46,15 +38,19 @@ jobs:
         working-directory: mobile_app/android
         run: chmod +x gradlew
 
-      - name: Build APK Locally
-        working-directory: mobile_app
-        run: eas build --platform android --profile preview --local --non-interactive --output=./app-release.apk
+      - name: Create Keystore (Debug)
+        working-directory: mobile_app/android/app
+        run: |
+          keytool -genkeypair -v -storepass android -keypass android -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build APK (Release)
+        working-directory: mobile_app/android
+        run: ./gradlew assembleRelease --no-daemon
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m"'
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: mobile_app/app-release.apk
+          path: mobile_app/android/app/build/outputs/apk/release/app-release.apk

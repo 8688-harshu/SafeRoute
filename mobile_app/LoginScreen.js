@@ -110,7 +110,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                             <Text style={styles.tagline}>SECURE ACCESS PORTAL</Text>
                         </View>
 
-                        {/* Glass Card (Static View instead of Animated.View) */}
+                        {/* Glass Card (Static View) */}
                         <View style={styles.glassCard}>
                             <Text style={styles.welcomeText}>Identity Verification</Text>
                             <Text style={styles.instructionText}>Authenticate to continue</Text>
