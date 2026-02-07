@@ -51,6 +51,11 @@ export default function HomeScreen({ onLogout }) {
     const [isSearching, setIsSearching] = useState(false);
     const [backendStatus, setBackendStatus] = useState('checking'); // checking, online, offline 
 
+    // User Profile Feature
+    const [userName, setUserName] = useState('User');
+    const [userPhone, setUserPhone] = useState('');
+    const [showProfileModal, setShowProfileModal] = useState(false);
+
     useEffect(() => {
         const check = async () => {
             try {
@@ -116,7 +121,21 @@ export default function HomeScreen({ onLogout }) {
 
         // Fetch Zones
         loadZones();
+
+        // Load User Profile
+        loadUserProfile();
     }, []);
+
+    const loadUserProfile = async () => {
+        try {
+            const name = await SecureStore.getItemAsync('user_name');
+            const phone = await SecureStore.getItemAsync('user_phone');
+            if (name) setUserName(name);
+            if (phone) setUserPhone(phone);
+        } catch (e) {
+            console.log("Error loading profile", e);
+        }
+    };
 
     const loadZones = async () => {
         try {
@@ -516,8 +535,13 @@ export default function HomeScreen({ onLogout }) {
 
             {/* 2. FLOATING UI */}
             <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
-                <TouchableOpacity onPress={onLogout} style={styles.menuButton}>
-                    <Feather name="log-out" size={24} color={theme.subtext} />
+                {/* Profile Avatar Trigger */}
+                <TouchableOpacity onPress={() => setShowProfileModal(true)} style={styles.profileAvatarContainer}>
+                    <View style={[styles.profileAvatar, { backgroundColor: GOOGLE_BLUE }]}>
+                        <Text style={styles.profileInitial}>
+                            {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                        </Text>
+                    </View>
                 </TouchableOpacity>
                 <TextInput
                     style={[styles.searchInput, { color: theme.text }]}
@@ -718,6 +742,49 @@ export default function HomeScreen({ onLogout }) {
                     </View>
                 </View>
             </Modal>
+
+            {/* User Profile Modal */}
+            <Modal
+                visible={showProfileModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowProfileModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowProfileModal(false)}
+                >
+                    <TouchableOpacity activeOpacity={1} onPress={() => { }}>
+                        <View style={[styles.profileModalContent, { backgroundColor: theme.card }]}>
+                            <View style={styles.profileHeader}>
+                                <View style={[styles.profileAvatarLarge, { backgroundColor: GOOGLE_BLUE }]}>
+                                    <Text style={styles.profileInitialLarge}>
+                                        {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                                    </Text>
+                                </View>
+                                <View style={styles.profileInfo}>
+                                    <Text style={[styles.profileName, { color: theme.text }]}>{userName}</Text>
+                                    <Text style={[styles.profilePhone, { color: theme.subtext }]}>{userPhone}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.divider} />
+
+                            <TouchableOpacity
+                                style={styles.logoutButton}
+                                onPress={() => {
+                                    setShowProfileModal(false);
+                                    onLogout();
+                                }}
+                            >
+                                <Feather name="log-out" size={20} color="white" style={{ marginRight: 10 }} />
+                                <Text style={styles.logoutText}>Sign Out</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }
@@ -794,5 +861,42 @@ const styles = StyleSheet.create({
     countdownCircle: { width: 100, height: 100, borderRadius: 50, borderWidth: 5, borderColor: SOS_RED, justifyContent: 'center', alignItems: 'center', marginVertical: 30 },
     countdownText: { fontSize: 40, fontWeight: 'bold', color: SOS_RED },
     iAmPageButton: { width: '100%', height: 60, backgroundColor: SAFETY_GREEN, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
-    iAmSafeText: { color: 'white', fontSize: 20, fontWeight: 'bold' }
+    iAmSafeText: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+
+    // Profile Avatar (Top Left)
+    profileAvatarContainer: { padding: 5, marginRight: 5 },
+    profileAvatar: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    profileInitial: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+
+    // Profile Modal
+    profileModalContent: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4
+    },
+    profileHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, width: '100%' },
+    profileAvatarLarge: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+    profileInitialLarge: { color: 'white', fontWeight: 'bold', fontSize: 28 },
+    profileInfo: { flex: 1 },
+    profileName: { fontSize: 22, fontWeight: 'bold', marginBottom: 4 },
+    profilePhone: { fontSize: 14 },
+    divider: { width: '100%', height: 1, backgroundColor: '#F1F3F4', marginBottom: 20 },
+    logoutButton: {
+        flexDirection: 'row',
+        backgroundColor: SOS_RED,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 25,
+        alignItems: 'center',
+        width: '100%',
+        justifyContent: 'center'
+    },
+    logoutText: { color: 'white', fontWeight: 'bold', fontSize: 16 }
 });

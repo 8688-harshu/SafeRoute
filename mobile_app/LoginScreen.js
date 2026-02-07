@@ -12,17 +12,20 @@ import {
     Keyboard,
     Alert,
     ScrollView,
-    Dimensions
+    Dimensions,
+    ImageBackground
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 import { API_URL } from './config';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ onLoginSuccess }) {
+    const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [showOtp, setShowOtp] = useState(false);
@@ -46,6 +49,10 @@ export default function LoginScreen({ onLoginSuccess }) {
     };
 
     const handleGetOtp = async () => {
+        if (name.trim().length < 2) {
+            Alert.alert("Missing Information", "Please enter your name.");
+            return;
+        }
         if (phone.length < 10) {
             Alert.alert("Invalid Input", "Please enter a valid phone number");
             return;
@@ -70,113 +77,143 @@ export default function LoginScreen({ onLoginSuccess }) {
         setShowOtp(true);
     };
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (otp.length < 4) {
             Alert.alert("Invalid OTP", "Please enter the OTP.");
             return;
         }
         setLoading(true);
         // Simulate API call
-        setTimeout(() => {
+        setTimeout(async () => {
             setLoading(false);
             console.log("Login Successful for:", phone);
+
+            // Save Name and Phone Locally
+            try {
+                if (Platform.OS !== 'web') {
+                    await SecureStore.setItemAsync('user_name', name);
+                    // user_phone is handled by App.js or we can do it here too, 
+                    // but App.js handles the state update via callback.
+                    // We'll trust App.js to handle phone saving if it normally does, 
+                    // but the prompt asked us to save it. 
+                    // The App.js handleLoginSuccess does save phone. 
+                    // We just need to save name here.
+                }
+            } catch (e) {
+                console.warn('Error saving local data:', e);
+            }
+
             onLoginSuccess(phone);
         }, 500);
     };
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <LinearGradient
-                colors={['#0f0c29', '#302b63', '#24243e']} // Cyberpunk Midnight Gradient
-                style={styles.background}
-            >
-                {/* Decorative Circles */}
-                <View style={[styles.circle, styles.circle1]} />
-                <View style={[styles.circle, styles.circle2]} />
-
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.container}
+            <View style={{ flex: 1 }}>
+                <StatusBar style="light" />
+                <ImageBackground
+                    source={{ uri: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop' }}
+                    style={styles.background}
+                    blurRadius={3}
                 >
-                    <ScrollView
-                        contentContainerStyle={styles.scrollContent}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
+                    {/* Dark Overlay for readability */}
+                    <View style={styles.overlay} />
+
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        style={styles.container}
                     >
-                        {/* Header Content */}
-                        <View style={styles.header}>
-                            <Ionicons name="finger-print-outline" size={64} color="#00f2ff" style={{ opacity: 0.9 }} />
-                            <Text style={styles.appName}>SafeRoute</Text>
-                            <Text style={styles.tagline}>SECURE ACCESS PORTAL</Text>
-                        </View>
-
-                        {/* Glass Card (Static View) */}
-                        <View style={styles.glassCard}>
-                            <Text style={styles.welcomeText}>Identity Verification</Text>
-                            <Text style={styles.instructionText}>Authenticate to continue</Text>
-
-                            {/* Phone Input */}
-                            <View style={styles.inputContainer}>
-                                <Ionicons name="smartphone-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
-                                <Text style={styles.prefix}>+91</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Mobile Number"
-                                    placeholderTextColor="rgba(255,255,255,0.4)"
-                                    keyboardType="phone-pad"
-                                    maxLength={10}
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                    editable={!showOtp}
-                                />
+                        <ScrollView
+                            contentContainerStyle={styles.scrollContent}
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                        >
+                            {/* Header Content */}
+                            <View style={styles.header}>
+                                <Ionicons name="shield-checkmark-outline" size={80} color="#4FACFE" style={{ opacity: 0.9 }} />
+                                <Text style={styles.appName}>SafeRoute</Text>
                             </View>
 
-                            {/* OTP Input (Conditional) */}
-                            {showOtp && (
-                                <View style={[styles.inputContainer, { marginTop: 25 }]}>
-                                    <Ionicons name="lock-closed-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
+                            {/* Glass Card (Static View) */}
+                            <View style={styles.glassCard}>
+                                <Text style={styles.welcomeText}>Identity Verification</Text>
+                                <Text style={styles.instructionText}>Authenticate to continue</Text>
+
+                                {/* Name Input */}
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="person-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Enter OTP Code"
+                                        placeholder="Enter Your Name"
                                         placeholderTextColor="rgba(255,255,255,0.4)"
-                                        keyboardType="number-pad"
-                                        maxLength={6}
-                                        value={otp}
-                                        onChangeText={setOtp}
+                                        value={name}
+                                        onChangeText={setName}
+                                        editable={!showOtp}
                                     />
                                 </View>
-                            )}
 
-                            {/* Hero Button */}
-                            <TouchableOpacity
-                                onPress={showOtp ? handleVerify : handleGetOtp}
-                                activeOpacity={0.8}
-                                style={styles.buttonWrapper}
-                            >
-                                <LinearGradient
-                                    colors={['#ff416c', '#ff4b2b']} // Sunset Orange Gradient
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={styles.heroButton}
+                                {/* Phone Input */}
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="smartphone-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
+                                    <Text style={styles.prefix}>+91</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Mobile Number"
+                                        placeholderTextColor="rgba(255,255,255,0.4)"
+                                        keyboardType="phone-pad"
+                                        maxLength={10}
+                                        value={phone}
+                                        onChangeText={setPhone}
+                                        editable={!showOtp}
+                                    />
+                                </View>
+
+                                {/* OTP Input (Conditional) */}
+                                {showOtp && (
+                                    <View style={[styles.inputContainer, { marginTop: 25 }]}>
+                                        <Ionicons name="lock-closed-outline" size={20} color="#00f2ff" style={styles.inputIcon} />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Enter OTP Code"
+                                            placeholderTextColor="rgba(255,255,255,0.4)"
+                                            keyboardType="number-pad"
+                                            maxLength={6}
+                                            value={otp}
+                                            onChangeText={setOtp}
+                                        />
+                                    </View>
+                                )}
+
+                                {/* Hero Button */}
+                                <TouchableOpacity
+                                    onPress={showOtp ? handleVerify : handleGetOtp}
+                                    activeOpacity={0.8}
+                                    style={styles.buttonWrapper}
                                 >
-                                    {loading ? (
-                                        <ActivityIndicator color="white" />
-                                    ) : (
-                                        <Text style={styles.buttonText}>
-                                            {showOtp ? "SECURE LOGIN" : "REQUEST OTP"}
-                                        </Text>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#ff416c', '#ff4b2b']} // Sunset Orange Gradient
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.heroButton}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="white" />
+                                        ) : (
+                                            <Text style={styles.buttonText}>
+                                                {showOtp ? "SECURE LOGIN" : "REQUEST OTP"}
+                                            </Text>
+                                        )}
+                                    </LinearGradient>
+                                </TouchableOpacity>
 
-                        </View>
+                            </View>
 
-                        <Text style={styles.footerText}>Protected by SafeRoute Security Systems v2.1</Text>
+                            <Text style={styles.footerText}>Protected by SafeRoute Security Systems v2.1</Text>
 
-                    </ScrollView>
-                </KeyboardAvoidingView>
-                <StatusBar style="light" />
-            </LinearGradient>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
+                </ImageBackground>
+            </View>
         </TouchableWithoutFeedback>
     );
 }
@@ -185,6 +222,11 @@ const styles = StyleSheet.create({
     background: {
         flex: 1,
         width: '100%',
+        height: '100%',
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(15, 12, 41, 0.7)', // Dark tint
     },
     container: {
         flex: 1,
@@ -194,26 +236,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: 40
-    },
-    // Decorative Circles
-    circle: {
-        position: 'absolute',
-        borderRadius: 200,
-        backgroundColor: '#00f2ff',
-        opacity: 0.08,
-    },
-    circle1: {
-        width: 300,
-        height: 300,
-        top: -50,
-        left: -80,
-    },
-    circle2: {
-        width: 200,
-        height: 200,
-        bottom: 100,
-        right: -40,
-        backgroundColor: '#ff416c',
     },
     header: {
         alignItems: 'center',
@@ -238,10 +260,10 @@ const styles = StyleSheet.create({
     },
     glassCard: {
         width: width * 0.85,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)', // Frosted Glass
+        backgroundColor: 'rgba(255, 255, 255, 0.1)', // Frosted Glass
         borderRadius: 25,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'rgba(255,255,255,0.2)',
         padding: 30,
         alignItems: 'center',
         shadowColor: '#000',
@@ -249,6 +271,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 20,
         elevation: 10,
+        // Make sure it stands out
+        backdropFilter: 'blur(10px)', // Works on Web, ignored on Native but good practice
     },
     welcomeText: {
         fontSize: 20,
@@ -270,6 +294,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.2)',
         paddingVertical: 12,
+        marginBottom: 15,
     },
     inputIcon: {
         marginRight: 15,
@@ -288,7 +313,7 @@ const styles = StyleSheet.create({
     },
     buttonWrapper: {
         width: '100%',
-        marginTop: 40,
+        marginTop: 25,
         borderRadius: 50,
         shadowColor: '#ff4b2b',
         shadowOffset: { width: 0, height: 4 },

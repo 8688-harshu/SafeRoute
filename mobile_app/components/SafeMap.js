@@ -66,50 +66,52 @@ export default function SafeMap({
 
             {/* Multi-Route Rendering - STRICT RISK COLORING */}
             {Array.isArray(allRoutes) && allRoutes.map((route, index) => {
-                // Handle different geometry formats if necessary, but assuming [[lat,lng],...]
-                const points = route.geometry.map(c => ({ latitude: c[0], longitude: c[1] }));
+                // Ensure coordinates: standard backend usually returns [[lat,lng],...]
+                const points = Array.isArray(route.geometry)
+                    ? route.geometry.map(c => ({ latitude: c[0], longitude: c[1] }))
+                    : [];
+
                 const isSelected = index === selectedRouteIndex;
 
-                // --- USER RULE: High Risk = RED. Accidental/Medium = YELLOW. Safe = GREEN. ---
-                // Priority: Backend Color > Risk Score
-                let baseColor = 'rgba(15, 157, 88, 1)'; // Default Green
+                // Color Determination Helper
+                const getRouteColor = (r) => {
+                    // 1. Use Frontend Calculated Stats (Preferred)
+                    if (r.stats) {
+                        const { safetyScore, isHighRisk, badgeLabel } = r.stats;
 
-                if (route.color === 'RED' || route.risk_score >= 40) {
-                    baseColor = 'rgba(217, 48, 37, 1)'; // Red
-                } else if (route.color === 'YELLOW' || (route.risk_score >= 25 && route.risk_score < 40)) {
-                    baseColor = 'rgba(251, 188, 4, 1)'; // Yellow
-                }
+                        // Condition 3: High Risk Zone -> RED
+                        if (isHighRisk || (safetyScore !== undefined && safetyScore < 50)) {
+                            return '#D50000';
+                        }
 
-                const isRisky = route.color === 'RED' || route.risk_score >= 40;
+                        // Condition 2: Accidental Zone / Medium -> YELLOW
+                        if (badgeLabel === 'Alternative' || (safetyScore >= 50 && safetyScore <= 80)) {
+                            return '#FFD600';
+                        }
 
-                let strokeColor;
-                let zIndex;
-                let strokeWidth;
+                        // Condition 1: Safe Route -> GREEN
+                        if (safetyScore > 80) {
+                            return '#00C853';
+                        }
+                    }
 
-                if (isRisky) {
-                    zIndex = 20; // Risky routes on top to warn
-                } else {
-                    zIndex = 10;
-                }
+                    // 2. Fallback: Raw Backend Data
+                    // Adjust thresholds as needed based on your backend 'risk_score' scale
+                    if (r.color === 'RED' || (r.risk_score && r.risk_score >= 40)) return '#D50000';
+                    if (r.color === 'YELLOW' || (r.risk_score && r.risk_score >= 20)) return '#FFD600';
 
-                if (isSelected) {
-                    strokeWidth = 7;
-                    zIndex += 50; // Selected ALWAYS on top
-                    strokeColor = baseColor;
-                } else {
-                    strokeWidth = 5;
-                    // Dimmed versions for inactive
-                    // We need to parse the rgba to add opacity, simple replacement for now
-                    strokeColor = baseColor.replace(', 1)', ', 0.5)');
-                }
+                    return '#00C853'; // Default Safe
+                };
+
+                const baseColor = getRouteColor(route);
 
                 return (
                     <Polyline
                         key={`route-${index}`}
                         coordinates={points}
-                        strokeColor={strokeColor}
-                        strokeWidth={strokeWidth}
-                        zIndex={zIndex}
+                        strokeColor={isSelected ? baseColor : `${baseColor}80`} // Add transparency if not selected
+                        strokeWidth={isSelected ? 6 : 4}
+                        zIndex={isSelected ? 50 : 10}
                         tappable={true}
                         onPress={() => setSelectedRouteIndex(index)}
                     />
