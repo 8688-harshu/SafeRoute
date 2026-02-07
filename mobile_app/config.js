@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
  * CONNECTED TO: Local Network (WiFi) or Production
  */
 // ⬇️ PRODUCTION URL (Render)
-const PROD_URL = 'https://saferoute-api.onrender.com';
+const PROD_URL = 'https://saferoute-api-v2.onrender.com'; // Updated to v2
 
 // ⬇️ LOCAL URL (Your Laptop IP - Update if IP changes)
 const LOCAL_URL = 'http://192.168.0.136:8000';
@@ -14,7 +14,10 @@ const LOCAL_URL = 'http://192.168.0.136:8000';
 // 🚀 Automatic Environment Detection
 // Use Local URL if in Development Mode (running with `npx expo start`)
 // Use Production URL if built for release (EAS Build / App Store)
-const BASE_URL = __DEV__ ? LOCAL_URL : PROD_URL;
+// const BASE_URL = __DEV__ ? LOCAL_URL : PROD_URL;
+
+// ⚠️ FORCE PRODUCTION (For testing Render connection)
+const BASE_URL = PROD_URL;
 
 console.log(`[SafeRoute] Connecting to Backend: ${BASE_URL}`);
 
