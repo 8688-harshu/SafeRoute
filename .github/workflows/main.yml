@@ -92,10 +92,12 @@ jobs:
     needs: [backend-check]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
     steps:
       - name: Deploy Backend to Render
-        if: secrets.RENDER_DEPLOY_HOOK
+        if: "${{ env.RENDER_HOOK != '' }}"
         run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
       - name: Log Deployment Status
-        if: "!secrets.RENDER_DEPLOY_HOOK"
+        if: "${{ env.RENDER_HOOK == '' }}"
         run: echo "Deployment skipped. Add RENDER_DEPLOY_HOOK secret to enable auto-deploy."
